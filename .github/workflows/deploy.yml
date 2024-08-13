@@ -1,4 +1,4 @@
-name: Blink CD
+name: Blink-Worker CD
 
 # develop 브랜치 push 시
 on:
@@ -62,8 +62,8 @@ jobs:
         with:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          application_name: link-server-test
-          environment_name: Link-server-test-env
+          application_name: link-server-worker
+          environment_name: Link-server-worker-env-1
           version_label: Link-${{steps.current-time.outputs.formattedTime}}
           region: ap-northeast-2
           deployment_package: deploy/deploy.zip
