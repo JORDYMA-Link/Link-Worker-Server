@@ -1,14 +1,21 @@
 package com.jordyma.blink.feed.service
 
-import com.jordyma.blink.feed.dto.FeedCalendarListDto
-import com.jordyma.blink.global.error.KEYWORDS_NOT_FOUND
-import com.jordyma.blink.global.error.exception.BadRequestException
-import com.jordyma.blink.global.util.rangeTo
-import com.jordyma.blink.feed.dto.FeedCalendarResponseDto
-import com.jordyma.blink.feed.dto.FeedItemDto
+import com.jordyma.blink.feed.entity.Feed
+import com.jordyma.blink.feed.entity.Source
+import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
+import com.jordyma.blink.folder.entity.Recommend
+import com.jordyma.blink.folder.repository.RecommendRepository
+import com.jordyma.blink.folder.service.FolderService
+import com.jordyma.blink.global.exception.ApplicationException
+import com.jordyma.blink.global.exception.ErrorCode
+import com.jordyma.blink.global.gemini.response.PromptResponse
 import com.jordyma.blink.keyword.repository.KeywordRepository
+import com.jordyma.blink.keyword.service.KeywordService
+import com.jordyma.blink.logger
 import com.jordyma.blink.user.dto.UserInfoDto
+import com.jordyma.blink.user.entity.User
+import com.jordyma.blink.user.repository.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.YearMonth
@@ -17,53 +24,93 @@ import java.time.format.DateTimeFormatter
 @Service
 class FeedService(
     private val feedRepository: FeedRepository,
+    private val folderService: FolderService,
     private val keywordRepository: KeywordRepository,
+    private val userRepository: UserRepository,
+    private val recommendRepository: RecommendRepository,
+    private val keywordService: KeywordService,
 ) {
 
-    @Transactional(readOnly = true)
-    fun getFeedsByMonth(user: UserInfoDto, yrMonth: String): FeedCalendarResponseDto {
-        val yearMonth = YearMonth.parse(yrMonth, DateTimeFormatter.ofPattern("yyyy-MM"))
-        val startOfMonth = yearMonth.atDay(1).atStartOfDay()
-        val endOfMonth = yearMonth.atEndOfMonth().atTime(23, 59, 59)
+    // 요약 실패 피드 생성
+    @Transactional
+    fun createFailed(userId: Long, link: String) {
+        val user = findUserOrElseThrow(userId)
+        val failedFolder = folderService.getFailed(user.id!!)
+        val feed = Feed(
+            folder = failedFolder,
+            originUrl = link,
+            summary = "",
+            title = "",
+            platform = "",
+            status = Status.FAILED,
+        )
+        feedRepository.save(feed)
+    }
 
-        val feeds = feedRepository.findFeedFolderDtoByUserIdAndBetweenDate(user.id, startOfMonth, endOfMonth)
-        val feedsByDate = feeds.groupBy { it.feed.createdAt?.toLocalDate() }
+    fun findUserOrElseThrow(userId: Long): User {
+        return userRepository.findById(userId).orElseThrow {
+            ApplicationException(ErrorCode.USER_NOT_FOUND, "유저를 찾을 수 없습니다.")
+        }
+    }
 
-        val response = mutableMapOf<String, FeedCalendarListDto>()
+    // 피드 생성
+    fun makeFeedAndResponse(content: PromptResponse, brunch: Source, userId: Long, link: String): Long {
+        val feed = makeFeed(userId, content, brunch, link)  // 피드 저장
+        createRecommendFolders(feed, content)
+        keywordService.createKeywords(feed, content.keyword)
+        //return makeAiSummaryResponse(content, brunch, feed.id!!)
+        return feed.id!!
+    }
 
-        for (date in startOfMonth.toLocalDate().rangeTo(endOfMonth.toLocalDate())) {
-            val feedItems = feedsByDate[date]?.map { feedFolderDto ->
-                FeedItemDto(
-                    folderId = feedFolderDto.folderId,
-                    folderName = feedFolderDto.folderName,
-                    feedId = feedFolderDto.feed.id,
-                    title = feedFolderDto.feed.title,
-                    summary = feedFolderDto.feed.summary,
-                    source = feedFolderDto.feed.source,
-                    sourceUrl = feedFolderDto.feed.url,
-                    isMarked = feedFolderDto.feed.isMarked,
-                    keywords = getKeywordsByFeedId(feedFolderDto.feed.id) // 키워드 추출 함수
-                )
-            } ?: emptyList()
-
-            val isArchived = feedItems.isNotEmpty()
-
-            response[date.toString()] = FeedCalendarListDto(
-                isArchived = isArchived,
-                list = feedItems
+    fun createRecommendFolders(feed: Feed, content: PromptResponse) {
+        var cnt = 0
+        val recommendFolders: MutableList<Recommend> = mutableListOf()
+        logger().info("promt resonse ? " + (content?.summary ?: "nullllll"))
+        for (folderName in content!!.category) {
+            val recommend = Recommend(
+                feed = feed,
+                folderName = folderName,
+                priority = cnt
             )
+            recommendRepository.save(recommend)
+            recommendFolders.add(recommend)
+            cnt++
         }
-
-        return FeedCalendarResponseDto(response)
+        feed.recommendFolders = recommendFolders
     }
 
-    private fun getKeywordsByFeedId(feedId: Long): List<String> {
-        val keywords = keywordRepository.findByFeedId(feedId)
-        if (keywords.isEmpty()) {
-            throw BadRequestException(KEYWORDS_NOT_FOUND)
-        }
-        return keywords.map { it.keyword }
+    private fun makeFeed(userId: Long, content: PromptResponse, brunch: Source, link: String): Feed {
+        val user = findUserOrElseThrow(userId)
+        val folder = folderService.getUnclassified(userId)
+
+        // ai 요약 결과로 피드 생성 (유저 매칭을 위해 폴더는 미분류로 지정)
+        val feed = Feed(
+            folder = folder!!,
+            originUrl = link,
+            summary = content?.summary ?: "",
+            title = content?.subject ?: "",
+            platform = brunch.source,
+            status = Status.COMPLETED,  // TODO: 워커 이식하면서 수정하기
+            isChecked = false,
+        )
+        return feedRepository.save(feed)
     }
 
-
+    fun findBrunch(link: String = ""): Source {
+        return if(link.contains("blog.naver.com")){
+            Source.NAVER_BLOG
+        } else if (link.contains("velog.io")){
+            Source.VELOG
+        } else if (link.contains("brunch.co.kr")){
+            Source.BRUNCH
+        } else if (link.contains("yozm.wishket")){
+            Source.YOZM_IT
+        } else if (link.contains("tistory.com")){
+            Source.TISTORY
+        } else if (link.contains("eopla.net")){
+            Source.EO
+        } else{
+            Source.DEFAULT
+        }
+    }
 }

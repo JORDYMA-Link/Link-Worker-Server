@@ -72,6 +72,18 @@ dependencies {
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     implementation("com.google.firebase:firebase-admin:9.1.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+
+
+    // jsoup
+    implementation("org.jsoup:jsoup:1.18.1")
+
+    // selenium
+    implementation("org.seleniumhq.selenium:selenium-java:4.14.1")
+    implementation("org.seleniumhq.selenium:selenium-chrome-driver:4.14.1")
+    implementation("io.github.bonigarcia:webdrivermanager:5.9.2")
+
+    implementation("com.auth0:java-jwt:4.4.0")
 
 }
 

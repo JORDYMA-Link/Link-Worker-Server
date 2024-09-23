@@ -20,14 +20,14 @@ class FeedController(
     private val feedService: FeedService,
     private val userService: UserService
 ) {
-    @Operation(summary = "캘린더 피드 검색 api", description = "년도와 월(yyyy-MM)을 param으로 넣어주면, 해당 월의 피드들을 반환해줍니다.")
-    @GetMapping("")
-    fun getFeedsByDate(
-        @RequestParam("yearMonth") yearMonth: String,
-        @RequestUserId userId: Long
-    ): ResponseEntity<FeedCalendarResponseDto> {
-        val userDto: UserInfoDto = userService.find(userId)
-        val response = feedService.getFeedsByMonth(user = userDto, yrMonth = yearMonth)
-        return ResponseEntity.ok(response)
-    }
+//    @Operation(summary = "캘린더 피드 검색 api", description = "년도와 월(yyyy-MM)을 param으로 넣어주면, 해당 월의 피드들을 반환해줍니다.")
+//    @GetMapping("")
+//    fun getFeedsByDate(
+//        @RequestParam("yearMonth") yearMonth: String,
+//        @RequestUserId userId: Long
+//    ): ResponseEntity<FeedCalendarResponseDto> {
+//        val userDto: UserInfoDto = userService.find(userId)
+//        val response = feedService.getFeedsByMonth(user = userDto, yrMonth = yearMonth)
+//        return ResponseEntity.ok(response)
+//    }
 }
