@@ -18,21 +18,21 @@ class FeedSummarizerServiceImpl(
 ): FeedSummarizerService {
 
     override fun summarizeFeed(payload: FeedSummarizeMessage): Unit {
-        val parseContent = htmlParser.fetchHtmlContent(payload.link)
         val userId = payload.userId
         val link = payload.link
+
+        val feedId = feedService.makeFeedFirst(userId, link)
+        val parseContent = htmlParser.fetchHtmlContent(link)
         val folderNames: List<String> = folderService.getFolders(userId=userId).folderList.map { it.name }
         val content = geminiService.getContents(
             link = link,
             folders = folderNames.joinToString(separator = " "),
             userId = userId,
-            parseContent
+            parseContent,
+            feedId
         )
         val brunch = feedService.findBrunch(link)
-        val feedId = feedService.makeFeedAndResponse(content, brunch, userId, payload.link)
-//        val feedIdResponseDto = FeedIdResponseDto(
-//            feedId = feedId
-//        )
+        feedService.updateSummarizedFeed(content, brunch, feedId, userId)
     }
 
     override fun refillToken(): Unit {

@@ -1,5 +1,6 @@
 package com.jordyma.blink.feed.service
 
+import com.jordyma.blink.auth.jwt.user_account.UserAccount
 import com.jordyma.blink.feed.entity.Feed
 import com.jordyma.blink.feed.entity.Source
 import com.jordyma.blink.feed.entity.Status
@@ -62,6 +63,38 @@ class FeedService(
         return feed.id!!
     }
 
+    @Transactional
+    fun makeFeedFirst(userId: Long, link: String): Long {
+        val user = findUserOrElseThrow(userId)
+        val feed = Feed(
+            originUrl = link,
+            summary = "",
+            title =  "",
+            platform = "",
+            status = Status.REQUESTED,
+            isChecked = false,
+        )
+        return feedRepository.save(feed).id!!
+    }
+
+
+    // gemini 요약 결과 업데이트
+    @Transactional
+    fun updateSummarizedFeed(content: PromptResponse, brunch: Source, feedId: Long, userId: Long) {
+
+        val feed = findFeedOrElseThrow(feedId)
+        val folder = folderService.getUnclassified(userId)
+
+        // 요약 결과 업데이트 (status: COMPLETE 포함)
+        feed.updateSummarizedContent(content.summary, content.subject, brunch)
+        feed.updateFolder(folder)
+        feedRepository.save(feed)
+
+        createRecommendFolders(feed, content)
+        keywordService.createKeywords(feed, content.keyword)
+    }
+
+    @Transactional
     fun createRecommendFolders(feed: Feed, content: PromptResponse) {
         var cnt = 0
         val recommendFolders: MutableList<Recommend> = mutableListOf()
@@ -111,6 +144,12 @@ class FeedService(
             Source.EO
         } else{
             Source.DEFAULT
+        }
+    }
+
+    fun findFeedOrElseThrow(feedId: Long): Feed{
+        return feedRepository.findById(feedId).orElseThrow {
+            ApplicationException(ErrorCode.FEED_NOT_FOUND, "피드를 찾을 수 없습니다.")
         }
     }
 }

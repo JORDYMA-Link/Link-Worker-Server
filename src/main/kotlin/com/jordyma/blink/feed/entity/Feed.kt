@@ -16,7 +16,7 @@ class Feed(
     var title: String,
 
     @Column(name = "platform", length = 100)
-    val platform: String? = "",
+    var platform: String? = "",
 
     @Column(name = "memo", columnDefinition = "TEXT")
     var memo: String? = "",
@@ -95,5 +95,13 @@ class Feed(
         this.summary = summary
         this.memo = memo
         this.folder = folder
+    }
+
+    fun updateSummarizedContent(summary: String, title: String, brunch: Source) {
+        this.summary = summary
+        this.title = title
+        this.platform = brunch.source
+        this.thumbnailImageUrl = brunch.image
+        this.status = Status.COMPLETED
     }
 }
