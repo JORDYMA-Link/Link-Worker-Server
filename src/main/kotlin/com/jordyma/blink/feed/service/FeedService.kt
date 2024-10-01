@@ -1,6 +1,8 @@
 package com.jordyma.blink.feed.service
 
+import com.google.firebase.messaging.Message
 import com.jordyma.blink.auth.jwt.user_account.UserAccount
+import com.jordyma.blink.fcm.client.FcmClient
 import com.jordyma.blink.feed.entity.Feed
 import com.jordyma.blink.feed.entity.Source
 import com.jordyma.blink.feed.entity.Status
@@ -15,6 +17,7 @@ import com.jordyma.blink.keyword.repository.KeywordRepository
 import com.jordyma.blink.keyword.service.KeywordService
 import com.jordyma.blink.logger
 import com.jordyma.blink.user.dto.UserInfoDto
+import com.jordyma.blink.user.entity.SocialType
 import com.jordyma.blink.user.entity.User
 import com.jordyma.blink.user.repository.UserRepository
 import org.springframework.stereotype.Service
@@ -30,6 +33,7 @@ class FeedService(
     private val userRepository: UserRepository,
     private val recommendRepository: RecommendRepository,
     private val keywordService: KeywordService,
+    private val fcmClient: FcmClient,
 ) {
 
     // 요약 실패 피드 생성
@@ -84,11 +88,21 @@ class FeedService(
 
         val feed = findFeedOrElseThrow(feedId)
         val folder = folderService.getUnclassified(userId)
+        val user = findUserOrElseThrow(userId)
 
         // 요약 결과 업데이트 (status: COMPLETE 포함)
         feed.updateSummarizedContent(content.summary, content.subject, brunch)
         feed.updateFolder(folder)
         feedRepository.save(feed)
+
+        val fcmToken = user.iosPushToken ?: user.aosPushToken ?: ""
+        val message = fcmClient.createMessage(
+            fcmToken,
+            SUMMARY_COMPLETED,
+            feed.id.toString(),
+            emptyMap()
+        )
+        fcmClient.send(message)
 
         createRecommendFolders(feed, content)
         keywordService.createKeywords(feed, content.keyword)
@@ -98,8 +112,7 @@ class FeedService(
     fun createRecommendFolders(feed: Feed, content: PromptResponse) {
         var cnt = 0
         val recommendFolders: MutableList<Recommend> = mutableListOf()
-        logger().info("promt resonse ? " + (content?.summary ?: "nullllll"))
-        for (folderName in content!!.category) {
+        for (folderName in content.category) {
             val recommend = Recommend(
                 feed = feed,
                 folderName = folderName,
@@ -151,5 +164,9 @@ class FeedService(
         return feedRepository.findById(feedId).orElseThrow {
             ApplicationException(ErrorCode.FEED_NOT_FOUND, "피드를 찾을 수 없습니다.")
         }
+    }
+
+    companion object{
+        const val SUMMARY_COMPLETED = "링크 요약이 완료되었어요."
     }
 }

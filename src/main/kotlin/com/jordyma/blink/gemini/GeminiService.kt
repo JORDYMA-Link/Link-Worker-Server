@@ -1,6 +1,7 @@
 package com.jordyma.blink.gemini
 
 import com.jordyma.blink.auth.jwt.user_account.UserAccount
+import com.jordyma.blink.fcm.client.FcmClient
 import com.jordyma.blink.feed.entity.Feed
 import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
@@ -28,10 +29,10 @@ class GeminiService @Autowired constructor(
     @Value("\${gemini.api.key}") private val geminiApiKey: String,
     private val feedService: FeedService,
     private val userRepository: UserRepository,
-    private val feedRepository: FeedRepository
+    private val feedRepository: FeedRepository,
 ) {
 
-    fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): PromptResponse {
+    fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): Any {
         return try {
             // gemini 요청
             val requestUrl = "$apiUrl?key=$geminiApiKey"
@@ -43,13 +44,17 @@ class GeminiService @Autowired constructor(
             val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
             logger().info("Received response from Gemini server: $response")
 
-
             // aiSummary
             if (responseText.isNotEmpty()) {
                 extractJsonAndParse(responseText)
 
             } else {
-                throw ApplicationException(ErrorCode.JSON_NOT_FOUND, "gemini json 파싱 오류")
+                // 요약 실패 update
+                val feed = findFeedOrElseThrow(feedId)
+                feed.updateStatus(Status.FAILED)
+                feedRepository.save(feed)
+
+                logger().info("gemini exception: failed to parse with json")
             }
         } catch (e: Exception) {
             // 요약 실패 update
@@ -57,7 +62,7 @@ class GeminiService @Autowired constructor(
             feed.updateStatus(Status.FAILED)
             feedRepository.save(feed)
 
-            throw ApplicationException(ErrorCode.JSON_NOT_FOUND, "gemini 요청 처리 중 오류 발생: ${e.message}")
+            logger().info("gemini exception: failed to summarize")
         }
     }
 

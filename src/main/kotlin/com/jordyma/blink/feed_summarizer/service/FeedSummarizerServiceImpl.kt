@@ -6,6 +6,8 @@ import com.jordyma.blink.feed_summarizer.listener.dto.FeedSummarizeMessage
 import com.jordyma.blink.feed_summarizer.request_limiter.SummarizeRequestLimiter
 import com.jordyma.blink.folder.service.FolderService
 import com.jordyma.blink.gemini.GeminiService
+import com.jordyma.blink.global.gemini.response.PromptResponse
+import com.jordyma.blink.logger
 import org.springframework.stereotype.Service
 
 @Service
@@ -24,15 +26,20 @@ class FeedSummarizerServiceImpl(
         val feedId = feedService.makeFeedFirst(userId, link)
         val parseContent = htmlParser.fetchHtmlContent(link)
         val folderNames: List<String> = folderService.getFolders(userId=userId).folderList.map { it.name }
-        val content = geminiService.getContents(
-            link = link,
-            folders = folderNames.joinToString(separator = " "),
-            userId = userId,
-            parseContent,
-            feedId
-        )
-        val brunch = feedService.findBrunch(link)
-        feedService.updateSummarizedFeed(content, brunch, feedId, userId)
+
+        try{
+            val content = geminiService.getContents(
+                link = link,
+                folders = folderNames.joinToString(separator = " "),
+                userId = userId,
+                parseContent,
+                feedId
+            ) as PromptResponse
+            val brunch = feedService.findBrunch(link)
+            feedService.updateSummarizedFeed(content, brunch, feedId, userId)
+        } catch (_: Exception){
+            logger().info("gemini exception: failed to summarize")
+        }
     }
 
     override fun refillToken(): Unit {
