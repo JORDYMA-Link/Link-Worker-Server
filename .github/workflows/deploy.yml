@@ -77,7 +77,7 @@ jobs:
           if test -e Procfile ; then cp Procfile ./deploy/Procfile ; fi
           if test -d .ebextensions ; then cp -r .ebextensions deploy/.ebextensions ; fi
           if test -d .platform ; then cp -r .platform deploy/.platform ; fi
-          if test -d cron.yaml ; then cp cron.yaml deploy/cron.yaml ; fi
+          if test -e cron.yaml ; then cp cron.yaml deploy/cron.yaml ; fi
           ls -al deploy
           cd deploy && zip -r deploy.zip .
 
