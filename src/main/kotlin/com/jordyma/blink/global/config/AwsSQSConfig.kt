@@ -2,10 +2,11 @@ package com.jordyma.blink.global.config
 
 import io.awspring.cloud.sqs.config.SqsMessageListenerContainerFactory
 import io.awspring.cloud.sqs.listener.acknowledgement.handler.AcknowledgementMode
-import io.awspring.cloud.sqs.operations.SqsTemplate
+import io.awspring.cloud.sqs.support.converter.SqsMessagingMessageConverter
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.messaging.Message
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -46,11 +47,15 @@ class AwsSQSConfig(
      */
     @Bean
     fun defaultSqsListenerContainerFactory(sqsAsyncClient: SqsAsyncClient): SqsMessageListenerContainerFactory<Any> {
+        val messageConverter = SqsMessagingMessageConverter()
+        messageConverter.setPayloadTypeMapper { null }
+
         return SqsMessageListenerContainerFactory
             .builder<Any>()
             // 수동으로 메세지를 삭제하기 위해 AcknowledgementMode.MANUAL로 설정
             .configure { opt ->
                 opt.acknowledgementMode(AcknowledgementMode.MANUAL)
+                opt.messageConverter(messageConverter)
             }
             .sqsAsyncClient(sqsAsyncClient)
             .build()
