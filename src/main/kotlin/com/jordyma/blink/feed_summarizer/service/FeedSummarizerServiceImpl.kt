@@ -37,12 +37,14 @@ class FeedSummarizerServiceImpl(
             ) as PromptResponse
             val brunch = feedService.findBrunch(link)
             feedService.updateSummarizedFeed(content, brunch, feedId, userId)
-        } catch (_: Exception){
+        } catch (e: Exception){
+            logger().error(e.message)
             logger().info("gemini exception: failed to summarize")
         }
     }
 
     override fun refillToken(): Unit {
         this.summarizeRequestLimiter.refillToken()
+        logger().info("refill token")
     }
 }
