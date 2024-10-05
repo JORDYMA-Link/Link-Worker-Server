@@ -23,7 +23,7 @@ class FeedSummarizerServiceImpl(
         val userId = payload.userId
         val link = payload.link
 
-        val feedId = feedService.makeFeedFirst(userId, link)
+        val feedId = payload.feedId.toLong()
         val parseContent = htmlParser.fetchHtmlContent(link)
         val folderNames: List<String> = folderService.getFolders(userId=userId).folderList.map { it.name }
 
