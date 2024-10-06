@@ -37,6 +37,7 @@ class FeedSummarizerServiceImpl(
             )
             if(content != null){
                 val brunch = feedService.findBrunch(link)
+                logger().info("updateSummarizedFeed start >>>>>")
                 feedService.updateSummarizedFeed(
                     content.subject,
                     content.summary,
@@ -46,6 +47,7 @@ class FeedSummarizerServiceImpl(
                     feedId,
                     userId
                 )
+                logger().info("updateSummarizedFeed end >>>>>")
             }
         } catch (e: Exception){
             logger().error(e.message)
