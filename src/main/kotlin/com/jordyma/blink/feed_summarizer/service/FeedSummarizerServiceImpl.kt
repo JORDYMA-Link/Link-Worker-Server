@@ -19,7 +19,7 @@ class FeedSummarizerServiceImpl(
     private val feedService: FeedService,
 ): FeedSummarizerService {
 
-    override fun summarizeFeed(payload: FeedSummarizeMessage): Unit {
+    override fun summarizeFeed(payload: FeedSummarizeMessage): PromptResponse? {
         val userId = payload.userId
         val link = payload.link
         val feedId = payload.feedId.toLong()
@@ -41,6 +41,7 @@ class FeedSummarizerServiceImpl(
             logger().error(e.message)
             logger().info("gemini exception: failed to summarize")
         }
+        return null
     }
 
     override fun refillToken(): Unit {

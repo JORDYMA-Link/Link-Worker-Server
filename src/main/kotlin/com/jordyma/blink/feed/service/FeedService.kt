@@ -85,6 +85,7 @@ class FeedService(
     // gemini 요약 결과 업데이트
     @Transactional
     fun updateSummarizedFeed(content: PromptResponse, brunch: Source, feedId: Long, userId: Long) {
+        logger().info(">>>>> feed update start")
 
         val feed = findFeedOrElseThrow(feedId)
         val folder = folderService.getUnclassified(userId)
@@ -94,6 +95,7 @@ class FeedService(
         feed.updateSummarizedContent(content.summary, content.subject, brunch)
         feed.updateFolder(folder)
         feedRepository.save(feed)
+
         logger().info("요약 결과 업데이트 성공")
 
         val fcmToken = user.iosPushToken ?: user.aosPushToken ?: ""
@@ -143,6 +145,7 @@ class FeedService(
         return feedRepository.save(feed)
     }
 
+
     fun findBrunch(link: String = ""): Source {
         return if(link.contains("blog.naver.com")){
             Source.NAVER_BLOG
@@ -156,7 +159,13 @@ class FeedService(
             Source.TISTORY
         } else if (link.contains("eopla.net")){
             Source.EO
-        } else{
+        } else if (link.contains("youtube.com")) {
+            Source.YOUTUBE
+        } else if (link.contains("naver.com")) {
+            Source.NAVER
+        } else if (link.contains("google.com")) {
+            Source.GOOGLE
+        } else {
             Source.DEFAULT
         }
     }
