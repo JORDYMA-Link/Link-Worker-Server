@@ -34,29 +34,46 @@ class GeminiService @Autowired constructor(
 ) {
 
     fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): PromptResponse? {
-        return try {
-            // gemini 요청
-            val requestUrl = "$apiUrl?key=$geminiApiKey"
-            val request = ChatRequest(makePrompt(link, folders, content))
-            logger().info("Sending request to Gemini server: $requestUrl with body: $request")
 
-            // gemini 요청값 받아오기
-            val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
-            val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
-            logger().info("Received response from Gemini server: $response")
+        // gemini 요청
+        val requestUrl = "$apiUrl?key=$geminiApiKey"
+        val request = ChatRequest(makePrompt(link, folders, content))
+        logger().info("Sending request to Gemini server: $requestUrl with body: $request")
 
-            // aiSummary
-            logger().info("gemini 요약 결과 : ${responseText}")
-            return extractJsonAndParse(responseText)
-        } catch (e: Exception) {
-            // 요약 실패 update
-            val feed = findFeedOrElseThrow(feedId)
-            feed.updateStatus(Status.FAILED)
-            feedRepository.save(feed)
+        // gemini 요청값 받아오기
+        val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
+        val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
+        logger().info("Received response from Gemini server: $response")
 
-            logger().info("gemini exception: failed to summarize")
-            return null
-        }
+        // aiSummary
+        logger().info("gemini 요약 결과 : ${responseText}")
+        val promptResponse = extractJsonAndParse(responseText)
+        return promptResponse
+
+//        return try {
+//            // gemini 요청
+//            val requestUrl = "$apiUrl?key=$geminiApiKey"
+//            val request = ChatRequest(makePrompt(link, folders, content))
+//            logger().info("Sending request to Gemini server: $requestUrl with body: $request")
+//
+//            // gemini 요청값 받아오기
+//            val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
+//            val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
+//            logger().info("Received response from Gemini server: $response")
+//
+//            // aiSummary
+//            logger().info("gemini 요약 결과 : ${responseText}")
+//            val promptResponse = extractJsonAndParse(responseText)
+//            return promptResponse
+//        } catch (e: Exception) {
+//            // 요약 실패 update
+//            val feed = findFeedOrElseThrow(feedId)
+//            feed.updateStatus(Status.FAILED)
+//            feedRepository.save(feed)
+//
+//            logger().info("gemini exception: failed to summarize")
+//            return null
+//        }
     }
 
     fun makePrompt(link: String, folders: String, content: String): String{
@@ -84,14 +101,14 @@ class GeminiService @Autowired constructor(
         val jsonString = matchResult?.value
 
         // JSON 문자열을 ContentData로 파싱하여 반환
-        return if (jsonString != null) {
+        if (jsonString != null) {
             logger().info("jsonString ::: $jsonString")
             val fixedJson = fixQuotes(text)
             logger().info("fixedJson ::: $fixedJson")
-            Json.decodeFromString<PromptResponse>(fixedJson)
+            return Json.decodeFromString<PromptResponse>(fixedJson)
         } else {
             logger().info("jsonString is null !!!!!!!!!!")
-            null
+            return null
             //throw ApplicationException(ErrorCode.JSON_PARSING_FAILED, "gemini json 파싱 실패")
         }
     }
