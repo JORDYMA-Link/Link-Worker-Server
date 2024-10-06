@@ -37,7 +37,15 @@ class FeedSummarizerServiceImpl(
             )
             if(content != null){
                 val brunch = feedService.findBrunch(link)
-                feedService.updateSummarizedFeed(content.subject, content.summary, brunch, feedId, userId)
+                feedService.updateSummarizedFeed(
+                    content.subject,
+                    content.summary,
+                    content.category,
+                    content.keyword,
+                    brunch,
+                    feedId,
+                    userId
+                )
             }
         } catch (e: Exception){
             logger().error(e.message)

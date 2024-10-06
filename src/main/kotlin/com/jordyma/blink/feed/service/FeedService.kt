@@ -84,7 +84,15 @@ class FeedService(
 
     // gemini 요약 결과 업데이트
     @Transactional
-    fun updateSummarizedFeed(subject: String, summary: String, brunch: Source, feedId: Long, userId: Long) {
+    fun updateSummarizedFeed(
+        subject: String,
+        summary: String,
+        category: List<String>,
+        keyword: List<String>,
+        brunch: Source,
+        feedId: Long,
+        userId: Long
+    ) {
         logger().info(">>>>> feed update start")
 
         val feed = findFeedOrElseThrow(feedId)
@@ -107,15 +115,15 @@ class FeedService(
         )
         fcmClient.send(message)
 
-        createRecommendFolders(feed, content)
-        keywordService.createKeywords(feed, content.keyword)
+        createRecommendFolders(feed, category)
+        keywordService.createKeywords(feed, keyword)
     }
 
     @Transactional
-    fun createRecommendFolders(feed: Feed, content: PromptResponse) {
+    fun createRecommendFolders(feed: Feed, category: List<String>) {
         var cnt = 0
         val recommendFolders: MutableList<Recommend> = mutableListOf()
-        for (folderName in content.category) {
+        for (folderName in category) {
             val recommend = Recommend(
                 feed = feed,
                 folderName = folderName,
