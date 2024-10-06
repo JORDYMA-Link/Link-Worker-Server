@@ -45,6 +45,7 @@ class GeminiService @Autowired constructor(
             logger().info("Received response from Gemini server: $response")
 
             // aiSummary
+            logger().info("gemini 요약 결과 : ${responseText}")
             if (responseText.isNotEmpty()) {
                 extractJsonAndParse(responseText)
 
