@@ -58,30 +58,6 @@ class FeedService(
         }
     }
 
-    // 피드 생성
-    fun makeFeedAndResponse(content: PromptResponse, brunch: Source, userId: Long, link: String): Long {
-        val feed = makeFeed(userId, content, brunch, link)  // 피드 저장
-        createRecommendFolders(feed, content)
-        keywordService.createKeywords(feed, content.keyword)
-        //return makeAiSummaryResponse(content, brunch, feed.id!!)
-        return feed.id!!
-    }
-
-    @Transactional
-    fun makeFeedFirst(userId: Long, link: String): Long {
-        val user = findUserOrElseThrow(userId)
-        val feed = Feed(
-            originUrl = link,
-            summary = "",
-            title =  "",
-            platform = "",
-            status = Status.REQUESTED,
-            isChecked = false,
-        )
-        return feedRepository.save(feed).id!!
-    }
-
-
     // gemini 요약 결과 업데이트
     @Transactional
     fun updateSummarizedFeed(
