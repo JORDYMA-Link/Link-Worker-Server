@@ -94,6 +94,7 @@ class FeedService(
         feed.updateSummarizedContent(content.summary, content.subject, brunch)
         feed.updateFolder(folder)
         feedRepository.save(feed)
+        logger().info("요약 결과 업데이트 성공")
 
         val fcmToken = user.iosPushToken ?: user.aosPushToken ?: ""
         val message = fcmClient.createMessage(

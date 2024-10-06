@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
+import kotlin.math.log
 
 
 @Suppress("UNREACHABLE_CODE")
@@ -46,17 +47,19 @@ class GeminiService @Autowired constructor(
 
             // aiSummary
             logger().info("gemini 요약 결과 : ${responseText}")
-            if (responseText.isNotEmpty()) {
-                extractJsonAndParse(responseText)
-
-            } else {
-                // 요약 실패 update
-                val feed = findFeedOrElseThrow(feedId)
-                feed.updateStatus(Status.FAILED)
-                feedRepository.save(feed)
-
-                logger().info("gemini exception: failed to parse with json")
-            }
+            extractJsonAndParse(responseText)
+//            if (responseText.isNotEmpty()) {
+//                extractJsonAndParse(responseText)
+//
+//            }
+//            else {
+//                // 요약 실패 update
+//                val feed = findFeedOrElseThrow(feedId)
+//                feed.updateStatus(Status.FAILED)
+//                feedRepository.save(feed)
+//
+//                logger().info("gemini exception: failed to parse with json")
+//            }
         } catch (e: Exception) {
             // 요약 실패 update
             val feed = findFeedOrElseThrow(feedId)
