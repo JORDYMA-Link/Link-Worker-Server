@@ -33,7 +33,7 @@ class GeminiService @Autowired constructor(
     private val feedRepository: FeedRepository,
 ) {
 
-    fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): Any {
+    fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): PromptResponse? {
         return try {
             // gemini 요청
             val requestUrl = "$apiUrl?key=$geminiApiKey"
@@ -47,19 +47,7 @@ class GeminiService @Autowired constructor(
 
             // aiSummary
             logger().info("gemini 요약 결과 : ${responseText}")
-            extractJsonAndParse(responseText)
-//            if (responseText.isNotEmpty()) {
-//                extractJsonAndParse(responseText)
-//
-//            }
-//            else {
-//                // 요약 실패 update
-//                val feed = findFeedOrElseThrow(feedId)
-//                feed.updateStatus(Status.FAILED)
-//                feedRepository.save(feed)
-//
-//                logger().info("gemini exception: failed to parse with json")
-//            }
+            return extractJsonAndParse(responseText)
         } catch (e: Exception) {
             // 요약 실패 update
             val feed = findFeedOrElseThrow(feedId)
@@ -67,6 +55,7 @@ class GeminiService @Autowired constructor(
             feedRepository.save(feed)
 
             logger().info("gemini exception: failed to summarize")
+            return null
         }
     }
 
