@@ -34,9 +34,11 @@ class FeedSummarizerServiceImpl(
                 userId = userId,
                 parseContent,
                 feedId
-            ) as PromptResponse
-            val brunch = feedService.findBrunch(link)
-            feedService.updateSummarizedFeed(content, brunch, feedId, userId)
+            )
+            if(content != null){
+                val brunch = feedService.findBrunch(link)
+                feedService.updateSummarizedFeed(content.subject, content.summary, brunch, feedId, userId)
+            }
         } catch (e: Exception){
             logger().error(e.message)
             logger().info("gemini exception: failed to summarize")

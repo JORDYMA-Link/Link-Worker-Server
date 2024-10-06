@@ -84,7 +84,7 @@ class FeedService(
 
     // gemini 요약 결과 업데이트
     @Transactional
-    fun updateSummarizedFeed(content: PromptResponse, brunch: Source, feedId: Long, userId: Long) {
+    fun updateSummarizedFeed(subject: String, summary: String, brunch: Source, feedId: Long, userId: Long) {
         logger().info(">>>>> feed update start")
 
         val feed = findFeedOrElseThrow(feedId)
@@ -92,7 +92,7 @@ class FeedService(
         val user = findUserOrElseThrow(userId)
 
         // 요약 결과 업데이트 (status: COMPLETE 포함)
-        feed.updateSummarizedContent(content.summary, content.subject, brunch)
+        feed.updateSummarizedContent(summary, subject, brunch)
         feed.updateFolder(folder)
         feedRepository.save(feed)
 
