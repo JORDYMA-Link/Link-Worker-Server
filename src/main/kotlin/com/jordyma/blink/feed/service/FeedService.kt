@@ -82,17 +82,17 @@ class FeedService(
 
         logger().info("요약 결과 업데이트 성공")
 
+        createRecommendFolders(feed, category)
+        keywordService.createKeywords(feed, keyword)
+
         val fcmToken = user.iosPushToken ?: user.aosPushToken ?: ""
         val message = fcmClient.createMessage(
             fcmToken,
             SUMMARY_COMPLETED,
-            feed.id.toString(),
+            feed.title.toString(),
             emptyMap()
         )
         fcmClient.send(message)
-
-        createRecommendFolders(feed, category)
-        keywordService.createKeywords(feed, keyword)
     }
 
     @Transactional
