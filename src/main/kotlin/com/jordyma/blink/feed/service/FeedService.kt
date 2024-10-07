@@ -89,7 +89,7 @@ class FeedService(
         val message = fcmClient.createMessage(
             fcmToken,
             SUMMARY_COMPLETED,
-            feed.title.toString(),
+            "# " + feed.title,
             emptyMap()
         )
         fcmClient.send(message)
