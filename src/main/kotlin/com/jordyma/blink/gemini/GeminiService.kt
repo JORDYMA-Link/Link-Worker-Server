@@ -34,31 +34,20 @@ class GeminiService @Autowired constructor(
 ) {
 
     fun getContents(link: String, folders: String, userId: Long, content: String, feedId: Long): PromptResponse? {
+        // gemini 요청
+        val requestUrl = "$apiUrl?key=$geminiApiKey"
+        val request = ChatRequest(makePrompt(link, folders, content))
+        logger().info("Sending request to Gemini server: $requestUrl with body: $request")
 
-        return try {
-            // gemini 요청
-            val requestUrl = "$apiUrl?key=$geminiApiKey"
-            val request = ChatRequest(makePrompt(link, folders, content))
-            logger().info("Sending request to Gemini server: $requestUrl with body: $request")
+        // gemini 요청값 받아오기
+        val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
+        val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
+        logger().info("Received response from Gemini server: $response")
 
-            // gemini 요청값 받아오기
-            val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
-            val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
-            logger().info("Received response from Gemini server: $response")
-
-            // aiSummary
-            logger().info("gemini 요약 결과 : ${responseText}")
-            val promptResponse = extractJsonAndParse(responseText)
-            return promptResponse
-        } catch (e: Exception) {
-            // 요약 실패 update
-            val feed = findFeedOrElseThrow(feedId)
-            feed.updateStatus(Status.FAILED)
-            feedRepository.save(feed)
-
-            logger().info("gemini exception: failed to summarize")
-            return null
-        }
+        // aiSummary
+        logger().info("gemini 요약 결과 : ${responseText}")
+        val promptResponse = extractJsonAndParse(responseText)
+        return promptResponse
     }
 
     fun makePrompt(link: String, folders: String, content: String): String{
