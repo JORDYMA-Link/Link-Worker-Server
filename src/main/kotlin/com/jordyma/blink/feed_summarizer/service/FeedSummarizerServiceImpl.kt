@@ -8,6 +8,8 @@ import com.jordyma.blink.feed_summarizer.listener.dto.FeedSummarizeMessage
 import com.jordyma.blink.feed_summarizer.request_limiter.SummarizeRequestLimiter
 import com.jordyma.blink.folder.service.FolderService
 import com.jordyma.blink.gemini.GeminiService
+import com.jordyma.blink.global.exception.ApplicationException
+import com.jordyma.blink.global.exception.ErrorCode
 import com.jordyma.blink.global.gemini.response.PromptResponse
 import com.jordyma.blink.logger
 import org.springframework.stereotype.Service
@@ -37,18 +39,20 @@ class FeedSummarizerServiceImpl(
                 parseContent,
                 feedId
             )
-            if(content != null){
-                val brunch = feedService.findBrunch(link)
-                feedService.updateSummarizedFeed(
-                    content.subject,
-                    content.summary,
-                    content.category,
-                    content.keyword,
-                    brunch,
-                    feedId,
-                    userId
-                )
+            if(content == null){
+                throw ApplicationException(ErrorCode.JSON_PARSING_FAILED, "gemini exception: no content")
             }
+
+            val brunch = feedService.findBrunch(link)
+            feedService.updateSummarizedFeed(
+                content.subject,
+                content.summary,
+                content.category,
+                content.keyword,
+                brunch,
+                feedId,
+                userId
+            )
         } catch (e: Exception){
             val feed = feedService.findFeedOrElseThrow(feedId)
             feed.updateStatus(Status.FAILED)
