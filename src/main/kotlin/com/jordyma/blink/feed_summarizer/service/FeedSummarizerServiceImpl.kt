@@ -36,7 +36,7 @@ class FeedSummarizerServiceImpl(
                 link = link,
                 folders = folderNames.joinToString(separator = " "),
                 userId = userId,
-                parseContent,
+                parseContent.content,
                 feedId
             )
             if(content == null){
@@ -51,7 +51,8 @@ class FeedSummarizerServiceImpl(
                 content.keyword,
                 brunch,
                 feedId,
-                userId
+                userId,
+                parseContent.thumbnailImage,
             )
         } catch (e: Exception){
             val feed = feedService.findFeedOrElseThrow(feedId)

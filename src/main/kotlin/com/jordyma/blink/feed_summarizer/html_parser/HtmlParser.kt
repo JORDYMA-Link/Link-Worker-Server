@@ -19,13 +19,14 @@ import java.time.Duration
 @Service
 class HtmlParser {
 
-    fun fetchHtmlContent(url: String): String {
+    fun fetchHtmlContent(url: String): ParseContent {
         //val document: Document = ajaxTest(url).let { Jsoup.parse(it) }
-        val document: Document = fetchDynamicContent(url).let { Jsoup.parse(it) }
+        val fetchedContent = fetchDynamicContent(url)
+        val document: Document = fetchedContent.content.let { Jsoup.parse(it) }
         var content = if (document.select("body").html() != "") document.select("body").html() else document.html()
         content = cleanHtml(content)
 
-        return content
+        return ParseContent(content, fetchedContent.thumbnailImage)
     }
 
 
@@ -36,8 +37,9 @@ class HtmlParser {
 
 
     // 동적 컨텐츠를 가져오기 위해 Selenium WebDriver를 사용
-    private fun fetchDynamicContent(url: String): String {
+    private fun fetchDynamicContent(url: String): ParseContent {
         var content = ""
+        var thumbnailImage = ""
 
         // Set up Selenium WebDriver (ChromeDriver in this case)
         // WebDriverManager.chromedriver().clearDriverCache().setup()
@@ -85,12 +87,22 @@ class HtmlParser {
             }
             logger().info("++++++++++++++++++++++===================+++++++++++++content: " + content)
 
+
+            // 메타데이터 추출
+            val document = Jsoup.parse(driver.pageSource)
+            val metaTags = document.select("meta")
+
+            // 썸네일 (og:image)
+            thumbnailImage = metaTags.firstOrNull { it.attr("property") == "og:image" }
+                ?.attr("content").toString()
+            logger().info("Thumbnail: $thumbnailImage")
+
         } finally {
             // Close the browser
             driver.quit()
         }
 
-        return content
+        return ParseContent(content, thumbnailImage)
     }
 
     private fun cleanHtml(html: String): String {

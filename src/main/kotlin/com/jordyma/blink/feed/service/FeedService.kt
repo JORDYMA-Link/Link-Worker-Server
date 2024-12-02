@@ -67,7 +67,8 @@ class FeedService(
         keyword: List<String>,
         brunch: Source,
         feedId: Long,
-        userId: Long
+        userId: Long,
+        thumbnailImage: String,
     ) {
         logger().info(">>>>> feed update start")
 
@@ -78,6 +79,7 @@ class FeedService(
         // 요약 결과 업데이트 (status: COMPLETE 포함)
         feed.updateSummarizedContent(summary, subject, brunch)
         feed.updateFolder(folder)
+        feed.updateThumbnailImageUrl(thumbnailImage)
         feedRepository.save(feed)
 
         logger().info("요약 결과 업데이트 성공")
