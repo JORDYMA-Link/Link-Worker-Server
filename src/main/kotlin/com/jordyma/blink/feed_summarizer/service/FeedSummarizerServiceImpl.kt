@@ -1,5 +1,6 @@
 package com.jordyma.blink.feed_summarizer.service
 
+import com.jordyma.blink.feed.entity.Source
 import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
 import com.jordyma.blink.feed.service.FeedService
@@ -31,6 +32,7 @@ class FeedSummarizerServiceImpl(
 
         try{
             val parseContent = htmlParser.fetchHtmlContent(link)
+            var thumbnailImage = parseContent.thumbnailImage
             val folderNames: List<String> = folderService.getFolders(userId=userId).folderList.map { it.name }
             val content = geminiService.getContents(
                 link = link,
@@ -39,11 +41,16 @@ class FeedSummarizerServiceImpl(
                 parseContent.content,
                 feedId
             )
-            if(content == null){
+            if (content == null){
                 throw ApplicationException(ErrorCode.JSON_PARSING_FAILED, "gemini exception: no content")
             }
 
+            // 플랫폼별 이미지 추출
             val brunch = feedService.findBrunch(link)
+            if (brunch == Source.BRUNCH){
+                thumbnailImage = thumbnailImage.removePrefix("//")
+            }
+
             feedService.updateSummarizedFeed(
                 content.subject,
                 content.summary,
@@ -52,7 +59,7 @@ class FeedSummarizerServiceImpl(
                 brunch,
                 feedId,
                 userId,
-                parseContent.thumbnailImage,
+                thumbnailImage,
             )
         } catch (e: Exception){
             val feed = feedService.findFeedOrElseThrow(feedId)
