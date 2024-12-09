@@ -1,9 +1,6 @@
 package com.jordyma.blink.gemini
 
-import com.jordyma.blink.auth.jwt.user_account.UserAccount
-import com.jordyma.blink.fcm.client.FcmClient
 import com.jordyma.blink.feed.entity.Feed
-import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
 import com.jordyma.blink.feed.service.FeedService
 import com.jordyma.blink.global.exception.ApplicationException
@@ -19,7 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
-import kotlin.math.log
 
 
 @Suppress("UNREACHABLE_CODE")
@@ -42,10 +38,9 @@ class GeminiService @Autowired constructor(
         // gemini 요청값 받아오기
         val response = restTemplate.postForObject(requestUrl, request, ChatResponse::class.java)
         val responseText = response?.candidates?.get(0)?.content?.parts?.get(0)?.text.orEmpty()
-        logger().info("Received response from Gemini server: $response")
 
         // aiSummary
-        logger().info("gemini 요약 결과 : ${responseText}")
+        logger().info("Received response from Gemini server : ${responseText}")
         val promptResponse = extractJsonAndParse(responseText)
         return promptResponse
     }
@@ -79,11 +74,12 @@ class GeminiService @Autowired constructor(
             logger().info("jsonString ::: $jsonString")
             val fixedJson = fixQuotes(text)
             logger().info("fixedJson ::: $fixedJson")
-            return Json.decodeFromString<PromptResponse>(fixedJson)
+            val escapedJson = escapeInternalQuotes(fixedJson)
+            logger().info("escapedJson ::: $escapedJson")
+            return Json.decodeFromString<PromptResponse>(escapedJson)
         } else {
             logger().info("jsonString is null !!!!!!!!!!")
             return null
-            //throw ApplicationException(ErrorCode.JSON_PARSING_FAILED, "gemini json 파싱 실패")
         }
     }
 
@@ -96,6 +92,16 @@ class GeminiService @Autowired constructor(
     fun findFeedOrElseThrow(feedId: Long): Feed {
         return feedRepository.findById(feedId).orElseThrow {
             ApplicationException(ErrorCode.FEED_NOT_FOUND, "피드를 찾을 수 없습니다.")
+        }
+    }
+
+    fun escapeInternalQuotes(json: String): String {
+        val regex = """:\s*"((?:[^"\\]|\\.)*)"""".toRegex()
+        return regex.replace(json) { matchResult ->
+            val fullMatch = matchResult.value
+            val value = matchResult.groups[1]?.value ?: ""
+            val escapedValue = value.replace("\"", "“")
+            fullMatch.replace(value, escapedValue)
         }
     }
 }
