@@ -11,6 +11,7 @@ import org.openqa.selenium.NoSuchFrameException
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.support.ui.ExpectedConditions
 import org.openqa.selenium.support.ui.ExpectedConditions.frameToBeAvailableAndSwitchToIt
 import org.openqa.selenium.support.ui.WebDriverWait
 import org.springframework.stereotype.Service
@@ -63,7 +64,7 @@ class HtmlParser {
         try {
             // Load the page and wait for JavaScript execution
             driver.get(url)
-            val wait = WebDriverWait(driver, Duration.ofSeconds(40)) //페이지 불러오는 여유시간
+            // val wait = WebDriverWait(driver, Duration.ofSeconds(40)) //페이지 불러오는 여유시간
             logger().info("++++++++++++++++++++++===================+++++++++++++selenium: " + driver.title)
 
             // Get the rendered HTML
@@ -77,10 +78,10 @@ class HtmlParser {
 
             // 페이지 내용 가져오기
             content = when {
-                driver.findElement(By.tagName("body")).text.isNotEmpty() -> {
+                isElementLoaded(driver, By.tagName("body")) && driver.findElement(By.tagName("body")).text.isNotEmpty() -> {
                     driver.findElement(By.tagName("body")).text
                 }
-                driver.findElement(By.id("content-area")).text.isNotEmpty() -> {
+                isElementLoaded(driver, By.id("content-area")) && driver.findElement(By.id("content-area")).text.isNotEmpty() -> {
                     driver.findElement(By.id("content-area")).text
                 }
                 else -> driver.pageSource
@@ -108,5 +109,17 @@ class HtmlParser {
     private fun cleanHtml(html: String): String {
         // 기본적으로 텍스트 포맷팅에 필요한 몇 가지 태그만 허용해서 html 정제
         return Jsoup.clean(html, Safelist.relaxed())
+    }
+
+    private fun isElementLoaded(driver: WebDriver, locator: By): Boolean {
+        return try {
+            val wait = WebDriverWait(driver, Duration.ofSeconds(20))
+            wait.until(ExpectedConditions.presenceOfElementLocated(locator))
+            wait.until(ExpectedConditions.visibilityOfElementLocated(locator))
+            true
+        } catch (e: Exception) {
+            logger().info("Element not loaded: $locator")
+            false
+        }
     }
 }

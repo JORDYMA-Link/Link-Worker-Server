@@ -51,6 +51,20 @@ class FeedSummarizerServiceImpl(
                 thumbnailImage = thumbnailImage.removePrefix("//")
             }
 
+            logger().info(
+                """
+            Attempting to update summarized feed with the following arguments:
+            subject: ${content.subject}
+            summary: ${content.summary}
+            category: ${content.category}
+            keyword: ${content.keyword}
+            brunch: $brunch
+            feedId: $feedId
+            userId: $userId
+            thumbnailImage: $thumbnailImage
+            """.trimIndent()
+            )
+
             feedService.updateSummarizedFeed(
                 content.subject,
                 content.summary,
