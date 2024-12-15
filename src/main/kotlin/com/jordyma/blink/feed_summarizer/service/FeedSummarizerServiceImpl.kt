@@ -80,7 +80,7 @@ class FeedSummarizerServiceImpl(
             feed.updateStatus(Status.FAILED)
             feedRepository.save(feed)
             logger().error(e.message)
-            logger().info("gemini exception: failed to summarize")
+            logger().info("gemini exception: failed to summarize ${payload.originUrl}")
         }
         return null
     }
