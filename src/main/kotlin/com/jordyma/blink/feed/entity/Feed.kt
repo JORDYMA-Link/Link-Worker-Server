@@ -24,7 +24,7 @@ class Feed(
     @Column(name = "origin_url", length = 512)
     val originUrl: String,
 
-    @Column(name = "thumbnail_image_url", length = 200)
+    @Column(name = "thumbnail_image_url", length = 500)
     var thumbnailImageUrl: String? = "",
 
     @Column(name = "is_marked", columnDefinition = "BIT")
