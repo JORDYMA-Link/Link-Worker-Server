@@ -25,7 +25,6 @@ class SummaryRequestListenerImpl(
     ): PromptResponse? {
         // TOKEN이 남아있을 때에만 요청을 처리한다.
         if (summarizeRequestLimiter.decreaseToken() > 0) {
-            // TODO 이 메서드에 요약 처리 로직을 추가해야함. 아래 메소드 구현 필요.
             val payload = message.payload
             feedSummarizerService.summarizeFeed(payload)
 

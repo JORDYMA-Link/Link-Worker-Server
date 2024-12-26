@@ -1,5 +1,6 @@
 package com.jordyma.blink.feed_summarizer.service
 
+import com.jordyma.blink.fcm.service.FcmService
 import com.jordyma.blink.feed.entity.Source
 import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
@@ -23,6 +24,7 @@ class FeedSummarizerServiceImpl(
     private val geminiService: GeminiService,
     private val feedService: FeedService,
     private val feedRepository: FeedRepository,
+    private val fcmService: FcmService,
 ): FeedSummarizerService {
 
     override fun summarizeFeed(payload: FeedSummarizeMessage): PromptResponse? {
@@ -65,7 +67,8 @@ class FeedSummarizerServiceImpl(
             """.trimIndent()
             )
 
-            feedService.updateSummarizedFeed(
+            // 요약 결과 업데이트
+            val feed = feedService.updateSummarizedFeed(
                 content.subject,
                 content.summary,
                 content.category,
@@ -75,6 +78,9 @@ class FeedSummarizerServiceImpl(
                 userId,
                 thumbnailImage,
             )
+
+            // 요약 완료 푸시알림 전송
+            fcmService.sendSummarizedAlert(userId, feed)
         } catch (e: Exception){
             val feed = feedService.findFeedOrElseThrow(feedId)
             feed.updateStatus(Status.FAILED)

@@ -79,7 +79,7 @@ class Feed(
         this.isChecked = true
     }
 
-    fun updateThumbnailImageUrl(imageUrl: String){
+    fun updateThumbnailImageUrl(imageUrl: String?){
         this.thumbnailImageUrl = imageUrl
     }
 
