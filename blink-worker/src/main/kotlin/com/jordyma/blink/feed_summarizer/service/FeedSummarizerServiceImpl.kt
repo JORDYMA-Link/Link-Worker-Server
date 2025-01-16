@@ -10,10 +10,13 @@ import com.jordyma.blink.feed_summarizer.listener.dto.FeedSummarizeMessage
 import com.jordyma.blink.feed_summarizer.request_limiter.SummarizeRequestLimiter
 import com.jordyma.blink.folder.service.FolderService
 import com.jordyma.blink.gemini.GeminiService
+import com.jordyma.blink.global.error.USER_NOT_FOUND
+import com.jordyma.blink.global.error.exception.BadRequestException
 import com.jordyma.blink.global.exception.ApplicationException
 import com.jordyma.blink.global.exception.ErrorCode
 import com.jordyma.blink.global.gemini.response.PromptResponse
 import com.jordyma.blink.logger
+import com.jordyma.blink.user.repository.UserRepository
 import org.springframework.stereotype.Service
 
 @Service
@@ -24,6 +27,7 @@ class FeedSummarizerServiceImpl(
     private val geminiService: GeminiService,
     private val feedService: FeedService,
     private val feedRepository: FeedRepository,
+    private val userRepository: UserRepository,
     private val fcmService: FcmService,
 ): FeedSummarizerService {
 
@@ -80,7 +84,10 @@ class FeedSummarizerServiceImpl(
             )
 
             // 요약 완료 푸시알림 전송
-            fcmService.sendSummarizedAlert(userId, feed)
+            val user = userRepository.findById(userId).orElseThrow { BadRequestException(USER_NOT_FOUND) }
+            if (user.iosPushToken != null || user.aosPushToken != null) {
+                fcmService.sendSummarizedAlert(userId, feed)
+            }
         } catch (e: Exception){
             val feed = feedService.findFeedOrElseThrow(feedId)
             feed.updateStatus(Status.FAILED)
