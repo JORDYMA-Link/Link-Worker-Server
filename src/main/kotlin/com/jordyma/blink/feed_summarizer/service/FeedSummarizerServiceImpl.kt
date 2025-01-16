@@ -6,6 +6,7 @@ import com.jordyma.blink.feed.entity.Status
 import com.jordyma.blink.feed.repository.FeedRepository
 import com.jordyma.blink.feed.service.FeedService
 import com.jordyma.blink.feed_summarizer.html_parser.HtmlParser
+import com.jordyma.blink.feed_summarizer.html_parser.HtmlParserV2
 import com.jordyma.blink.feed_summarizer.listener.dto.FeedSummarizeMessage
 import com.jordyma.blink.feed_summarizer.request_limiter.SummarizeRequestLimiter
 import com.jordyma.blink.folder.service.FolderService
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service
 class FeedSummarizerServiceImpl(
     private val summarizeRequestLimiter: SummarizeRequestLimiter,
     private val htmlParser: HtmlParser,
+    private val htmlParserV2: HtmlParserV2,
     private val folderService: FolderService,
     private val geminiService: GeminiService,
     private val feedService: FeedService,
@@ -37,7 +39,7 @@ class FeedSummarizerServiceImpl(
         val feedId = payload.feedId.toLong()
 
         try{
-            val parseContent = htmlParser.fetchHtmlContent(link)
+            val parseContent = htmlParserV2.parseUrl(link)
             var thumbnailImage = parseContent.thumbnailImage
             val folderNames: List<String> = folderService.getFolders(userId=userId).folderList.map { it.name }
             val content = geminiService.getContents(
