@@ -13,6 +13,9 @@ inline fun <reified T> T.logger() = LoggerFactory.getLogger(T::class.java)!!
 
 fun main(args: Array<String>) {
     val name: String? = System.getenv("job.name")
+    if (name != null) {
+        System.setProperty("spring.batch.job.name", name)
+    }
     val exit = SpringApplication.exit(
         SpringApplicationBuilder(BlinkBatchApplication::class.java).run(*args),
     )
