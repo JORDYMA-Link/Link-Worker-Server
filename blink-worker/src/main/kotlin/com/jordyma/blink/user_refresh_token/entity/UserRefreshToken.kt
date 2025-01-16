@@ -2,37 +2,30 @@ package com.jordyma.blink.user_refresh_token.entity
 
 import com.jordyma.blink.user.entity.User
 import jakarta.persistence.*
-import lombok.AccessLevel
-import lombok.Getter
-import lombok.NoArgsConstructor
 
 @Entity
-@Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-class UserRefreshToken {
+class UserRefreshToken protected constructor(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
-    private var id: Long? = null
+    val id: Long? = null,
 
     @Column(name = "refresh_token", columnDefinition = "VARCHAR(500)")
-    private var refreshToken: String? = null
+    var refreshToken: String? = null,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private var user: User? = null
+    var user: User? = null
+) {
 
-    fun updateRefreshToken(refreshToken: String?) {
-        this.refreshToken = refreshToken
+    fun updateRefreshToken(newRefreshToken: String?) {
+        refreshToken = newRefreshToken
     }
 
     companion object {
-        fun of(refreshToken: String?, user: User?): UserRefreshToken {
-            val userRefreshToken = UserRefreshToken()
-            userRefreshToken.refreshToken = refreshToken
-            userRefreshToken.user = user
-
-            return userRefreshToken
-        }
+        fun of(refreshToken: String?, user: User?) = UserRefreshToken(
+            refreshToken = refreshToken,
+            user = user
+        )
     }
 }

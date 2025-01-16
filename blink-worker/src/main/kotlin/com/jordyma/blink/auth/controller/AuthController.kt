@@ -6,7 +6,6 @@ import com.jordyma.blink.global.util.CommonUtil
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.tags.Tag
-import lombok.RequiredArgsConstructor
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "auth", description = "인증 API")
 @RestController
 @RequestMapping("/auth")
-@RequiredArgsConstructor
 class AuthController(
     private val authService: AuthService
 ) {

@@ -6,6 +6,10 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("io.springfox:springfox-swagger-ui:3.0.0")
+    implementation("io.springfox:springfox-boot-starter:3.0.0")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -27,6 +31,7 @@ dependencies {
     // Web Scraping
     implementation("org.jsoup:jsoup:1.18.1")
     implementation("org.seleniumhq.selenium:selenium-java:4.14.1")
+    implementation("io.github.bonigarcia:webdrivermanager:5.6.3")
 
     // API Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2")
