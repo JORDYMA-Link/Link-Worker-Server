@@ -28,24 +28,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # application.yml을 s3로 부터 다운로드
-      - name: Getting S3 Object
-        id: s3
-        uses: jcfrane/s3-get-object-action@v1.0
-        with:
-          region: ap-southeast-2
-          bucket: blink-env
-          aws-access-key: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          object-key: env/dev/application.yml
-          filename: application.yml
-
-      # move application yml
-      - name: Move application.yml
-        run: |
-          mkdir -p src/main/resources
-          mv application.yml src/main/resources
-
       # gradlew 권한
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
@@ -65,28 +47,25 @@ jobs:
           format: YYYY-MM-DDTHH-mm-ss
           utcOffset: "+09:00" # 한국 시간
 
-      - name: Generate deployment packages
+      - name: Create .ebextensions
         run: |
-          mkdir -p deploy/worker
-          cp blink-worker/build/libs/*-SNAPSHOT.jar deploy/worker/application.jar
-          if test -e Procfile ; then cp Procfile ./deploy/worker/Procfile ; fi
-          if test -d .ebextensions ; then cp -r .ebextensions deploy/worker/.ebextensions ; fi
-          if test -d .platform ; then cp -r .platform deploy/worker/.platform ; fi
-          cd deploy/worker && zip -r ../worker-deploy.zip . && cd ../..
+          mkdir -p .ebextensions
+          echo "option_settings:" > .ebextensions/worker-settings.config
+          echo "  aws:elasticbeanstalk:sqsd:" >> .ebextensions/worker-settings.config
+          echo "    HttpPath: /worker" >> .ebextensions/worker-settings.config
+          echo "  aws:elasticbeanstalk:application:environment:" >> .ebextensions/worker-settings.config
+          echo "    SPRING_PROFILES_ACTIVE: prod" >> .ebextensions/worker-settings.config
 
-          mkdir -p deploy/batch
-          cp blink-batch/build/libs/*-SNAPSHOT.jar deploy/batch/application.jar
-          if test -e Procfile ; then cp Procfile ./deploy/batch/Procfile ; fi
-          if test -d .ebextensions ; then cp -r .ebextensions deploy/batch/.ebextensions ; fi
-          if test -d .platform ; then cp -r .platform deploy/batch/.platform ; fi
-          if test -e cron.yaml ; then cp cron.yaml deploy/batch/cron.yaml ; fi
-          cd deploy/batch && zip -r ../batch-deploy.zip . && cd ../..
-
-          cd deploy
-          mkdir -p combined
-          unzip -o worker-deploy.zip -d combined/worker
-          unzip -o batch-deploy.zip -d combined/batch
-          cd combined && zip -r ../combined-deploy.zip .
+      - name: Generate deployment package
+        run: |
+          mkdir -p deploy
+          cp blink-worker/build/libs/*-SNAPSHOT.jar deploy/worker.jar
+          cp blink-batch/build/libs/*-SNAPSHOT.jar deploy/batch.jar
+          echo "worker: java -jar worker.jar" > deploy/Procfile
+          echo "batch: java -jar batch.jar" >> deploy/Procfile
+          if test -d .ebextensions ; then cp -r .ebextensions deploy/.ebextensions ; fi
+          if test -d .platform ; then cp -r .platform deploy/.platform ; fi
+          cd deploy && zip -r deploy.zip .
 
         # Beanstalk Deploy 플러그인 사용
       - name: Beanstalk Deploy
@@ -98,5 +77,5 @@ jobs:
           environment_name: Link-server-worker-env-1
           version_label: Link-${{steps.current-time.outputs.formattedTime}}
           region: ap-northeast-2
-          deployment_package: deploy/combined-deploy.zip
+          deployment_package: deploy/deploy.zip
           wait_for_environment_recovery: 900
