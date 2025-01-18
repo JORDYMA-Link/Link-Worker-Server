@@ -30,10 +30,12 @@ subprojects {
 
     dependencies {
         // 공통 의존성
-        "implementation"("org.jetbrains.kotlin:kotlin-reflect")
-        "implementation"("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-        "implementation"("com.fasterxml.jackson.module:jackson-module-kotlin")
-        "implementation"("io.awspring.cloud:spring-cloud-aws-starter-sqs")
+        implementation("org.springframework.boot:spring-boot-starter-batch")
+        implementation("org.springframework.boot:spring-boot-starter-web")
+        implementation("org.jetbrains.kotlin:kotlin-reflect")
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+        implementation("io.awspring.cloud:spring-cloud-aws-starter-sqs")
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
