@@ -2,7 +2,6 @@ package com.jordyma.blink.jobs.user
 
 import com.jordyma.blink.domain.dto.UserDataNotificationDto
 import com.jordyma.blink.domain.service.SendMessageService
-import com.jordyma.blink.logger
 import org.springframework.batch.core.Job
 import org.springframework.batch.core.Step
 import org.springframework.batch.core.configuration.annotation.StepScope
@@ -12,21 +11,16 @@ import org.springframework.batch.core.step.builder.StepBuilder
 import org.springframework.batch.item.ItemWriter
 import org.springframework.batch.item.database.JdbcCursorItemReader
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.transaction.PlatformTransactionManager
 import javax.sql.DataSource
 
 @Configuration
-@ConditionalOnProperty(name = ["job.name"], havingValue = UserDataNotificationJobConfig.JOB_NAME)
 class UserDataNotificationJobConfig(
     private val jobRepository: JobRepository,
     @Qualifier("batchTransactionManager")
     private val batchTransactionManager: PlatformTransactionManager,
-    @Value("\${DRY_RUN:false}")
-    private val dryRun: Boolean,
     private val dataSource: DataSource,
     private val sendMessageService: SendMessageService,
 ) {
@@ -63,7 +57,7 @@ class UserDataNotificationJobConfig(
         )
         SELECT 
             (SELECT COUNT(*) FROM new_users) AS new_users_count,
-            (SELECT COUNT(*) FROM user WHERE deleted_at IS NULL) AS total_users,
+            (SELECT COUNT(*) FROM user WHERE deleted_at IS NULL AND created_at < CURRENT_DATE) AS total_users,
             (
                 SELECT COUNT(*)
                 FROM feed f
@@ -103,12 +97,8 @@ class UserDataNotificationJobConfig(
     @Bean
     fun userDataNotificationWriter(): ItemWriter<UserDataNotificationDto> {
         return ItemWriter { items ->
-            if (dryRun) {
-                logger().info("userDataNotificationDto : $items")
-            } else {
-                items.firstOrNull()?.let { dto ->
-                    sendMessageService.sendUserDataNotification(dto)
-                }
+            items.firstOrNull()?.let { dto ->
+                sendMessageService.sendUserDataNotification(dto)
             }
         }
     }
