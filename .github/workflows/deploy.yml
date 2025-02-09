@@ -1,9 +1,8 @@
 name: Blink-Worker CD
 
-# develop 브랜치 push 시
 on:
   push:
-    branches: [ dev ]
+    branches: [ feat/fcm-push ]
 
 jobs:
   build:
@@ -35,8 +34,10 @@ jobs:
         shell: bash
 
       # 테스트를 제외한 프로젝트 빌드
-      - name: Build With Gradle
-        run: ./gradlew build -x test
+      - name: Build Worker and Batch
+        run: |
+          ./gradlew :blink-worker:build -x test
+          ./gradlew :blink-batch:build -x test
 
       # version 라벨링용
       - name: Get current time
@@ -46,12 +47,22 @@ jobs:
           format: YYYY-MM-DDTHH-mm-ss
           utcOffset: "+09:00" # 한국 시간
 
-      # 배포용
+      - name: Create .ebextensions
+        run: |
+          mkdir -p .ebextensions
+          echo "option_settings:" > .ebextensions/worker-settings.config
+          echo "  aws:elasticbeanstalk:sqsd:" >> .ebextensions/worker-settings.config
+          echo "    HttpPath: /worker" >> .ebextensions/worker-settings.config
+          echo "  aws:elasticbeanstalk:application:environment:" >> .ebextensions/worker-settings.config
+          echo "    SPRING_PROFILES_ACTIVE: prod" >> .ebextensions/worker-settings.config
+
       - name: Generate deployment package
         run: |
           mkdir -p deploy
-          cp build/libs/*-SNAPSHOT.jar deploy/application.jar
-          if test -e Procfile ; then cp Procfile ./deploy/Procfile ; fi
+          cp blink-worker/build/libs/*-SNAPSHOT.jar deploy/worker.jar
+          cp blink-batch/build/libs/*-SNAPSHOT.jar deploy/batch.jar
+          echo "worker: java -jar worker.jar" > deploy/Procfile
+          echo "batch: java -jar batch.jar" >> deploy/Procfile
           if test -d .ebextensions ; then cp -r .ebextensions deploy/.ebextensions ; fi
           if test -d .platform ; then cp -r .platform deploy/.platform ; fi
           cd deploy && zip -r deploy.zip .
